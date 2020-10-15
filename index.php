@@ -1,6 +1,6 @@
 <p id="date"></p>
 <br>
-<p>Test 1</p>
+<p>Test 2</p>
 
 <script>
     var d = new Date();
