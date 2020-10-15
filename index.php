@@ -1,8 +1,27 @@
-<p id="date"></p>
-<br>
-<p>Update3</p>
+<?php echo "Hello" ?>
 
-<script>
-    var d = new Date();
-    document.getElementById("date").innerHTML = d;
-</script>
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="UTF-8">
+        <!-- <link rel="stylesheet" type="text/css" href="content/framework/primordial.css"> -->
+        <title>MediaMakerMatt</title>
+    </head>
+    <body>
+        <!-- START CONTENT -->
+        <div class="row">
+            <div class="col-50">
+                Bootstrap Column 7
+            </div>
+            <div class="col-50">
+                Bootstrap Column 6
+            </div>
+        </div>
+        <!-- END CONTENT -->
+    </body>
+</html>
+
+
+
+
+
