@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home2/mediamk0/public_html/
+    - /bin/cp index.php $DEPLOYPATH
