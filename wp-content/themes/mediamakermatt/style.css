@@ -1,19 +1,10 @@
+@import "framework/primordial.css";
+
 body {
-    text-align: left;
     margin: 0;
-    padding: 50px;
-    border: 10px solid red;
-}
-#ttr_sidebar {
-    border-left: 1px solid black;
-}
-#ttr_footer {
-    width: 100%;
-    border-top: 1px #a2a2a2 solid;
-    text-align: center;
-}
-.title {
-    font-size: 11pt;
-    font-family: verdana;
-    font-weight: bold;
+    padding: 0;
+    background: #111111;
+    color: #f5f5f5;
+    font-size: 16px;
+    font-family: 'Raleway', sans-serif;
 }
