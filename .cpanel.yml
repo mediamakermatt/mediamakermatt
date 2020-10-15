@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home2/mediamk0/repositories/mediamakermatt/.git
-    - /bin/cp index.php $DEPLOYPATH
+    - export DEPLOYPATH=/home2/mediamk0/public_html
+    - /bin/cp -r * $DEPLOYPATH
