@@ -1,6 +1,6 @@
 var load_characters = true;
-var farm_phoenix = false;
-var merchant_trade_in_town = false;
+var farm_phoenix = true;
+var merchant_trade_in_town = true;
 var main_loop = character.ping;
 var potion_types = ['hpot1', 'mpot1'];
 var load_code_name = "master_wip";
@@ -11,8 +11,8 @@ var gold_limit = 1000000;
 var farm_location = {x: -1091, y: -62, map: "main"};
 var town_trade_location = {x: 22, y: -142, map: "main"};
 var sell_whitelist = {
-    ringsj: 0, hpbelt: 0, hpamulet: 0,
-    slimestaff: 6, quiver: 6, mushroomstaff: 7,
+    ringsj: 0, hpbelt: 0, hpamulet: 0, quiver: 7,
+    slimestaff: 6, quiver: 6, mushroomstaff: 7, cclaw: 7,
     dexring: 2, intring: 2, strring: 2, vitring: 2,
     dexearring: 2, intearring: 2, strearring: 2, vitearring: 2,
     dexamulet: 2, intamulet: 2, stramulet: 2,
@@ -459,10 +459,18 @@ function localStorageFarmer(){
 function determineBuff(name, time){
     if(character.s[name] != undefined){
         if(character.s[name].ms >= time){
-            if(character.s.mluck.f == party_names[0]){
-                var buff = true;
+            if(name == 'mluck'){
+                if(character.s[name].f != undefined){
+                    if(character.s[name].f == party_names[0]){
+                        var buff = true;
+                    } else {
+                        var buff = false;
+                    }
+                } else {
+                    var buff = false;
+                }  
             } else {
-                var buff = false;
+                var buff = true;
             }
         } else {
             var buff = false;
@@ -544,6 +552,7 @@ function buffFarmers(){
 
 var last_gold_send = null;
 function sendToMerchant(dist, time){
+    sentMerchantItems();
     if(last_gold_send == null || new Date() - last_gold_send >= time){
         var merchant = get_player(party_names[0]);
         var gold_keep = gold_limit * 2;
@@ -554,6 +563,43 @@ function sendToMerchant(dist, time){
                     parent.socket.emit("send",{name:party_names[0], gold:character.gold - gold_limit});
                     last_gold_send = new Date();
                 }
+            }
+        }
+    }
+}
+
+function sentMerchantItems(){
+    for(let i in character.items){
+        let item = character.items[i];
+        if(item){
+            if(item.l == undefined){
+                if(item.p != undefined && item.p == "shiny"){
+                    sendItemToMerchant(300, i, 9999, 250);
+                }
+                if(item.q != undefined && !potion_types.includes(item.name)){
+                    sendItemToMerchant(300, i, 9999, 250);
+                }
+                if(item.level != undefined){
+                    if(upgrade_whitelist[item.name] != undefined && Object.keys(upgrade_whitelist).includes(item.name)){
+                        if(item.level >= upgrade_whitelist[item.name]){
+                            sendItemToMerchant(300, i, 9999, 250);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+var last_item_send = null;
+function sendItemToMerchant(dist, slot, amt, time){
+    if(last_item_send == null || new Date() - last_item_send >= time){
+        var merchant = get_player(party_names[0]);
+        if(merchant){
+            var distance = distanceToPoint(merchant.real_x, merchant.real_y, character.real_x, character.real_y);
+            if(distance <= dist){
+                parent.socket.emit("send",{name:party_names[0], num:slot, q:amt||1});
+                last_item_send = new Date();
             }
         }
     }
