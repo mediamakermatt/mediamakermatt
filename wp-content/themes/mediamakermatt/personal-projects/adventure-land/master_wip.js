@@ -47,6 +47,30 @@ setInterval(function(){
     handleItems();
 }, 1000);
 
+function getItemsBankNumber(item, bank_num){
+    var items = [];
+    for(let i in bank_data[bank_num]){
+        let bank_item = bank_data[bank_num][i];
+        if(bank_item){
+            if(bank_item.name == item){
+                var data = {
+                    name: bank_item.name,
+                    q: bank_item.q,
+                    level: bank_item.level
+                };
+                items.push(data);
+            }
+        }
+    }
+    if(items.length > 0){
+        if(items.length > 1){
+            return items; 
+        }
+        return items[0];
+    }
+    return null;
+}
+
 function handleItems(){
     for(let i in character.items){
         let item = character.items[i];
@@ -68,6 +92,7 @@ function sellItems(slot, data){
         }
     }
 }
+
 
 function getGrade(item) {
     return parent.G.items[item.name].grades;
@@ -318,8 +343,14 @@ function farmerLogic(){
     }
 }
 
+var last_merchant_local_storage = null;
 function localStorageMerchant(){
-    // get merchants local storage data
+    if(last_merchant_local_storage == null || new Date() - last_merchant_local_storage >= 100){
+        if(character.bank != undefined){
+            localStorage.setItem('Bank_Data', JSON.stringify(character.bank));
+            last_merchant_local_storage = new Date();
+        }
+    }
 }
 
 function farmPhoenix(){
@@ -377,7 +408,7 @@ function farmHighPriorityMonsters(){
     for(let i in high_priority_monsters){
         let monster = parent.S[high_priority_monsters[i]];
         var snowman_hp = parent.G.monsters.snowman.max_hp;
-        if(monster && monster.live && monster.hp < monster.max_hp * 0.75 && monster.max_hp > snowman_hp){
+        if(monster && monster.live && monster.hp < monster.max_hp * 0.9 && monster.max_hp > snowman_hp){
             monsters.push(monster);
         }
     }
@@ -386,8 +417,14 @@ function farmHighPriorityMonsters(){
     if(monsters.length && !snowman_target){
         let entities = Object.values(parent.entities);
         let desired_monsters = entities.filter(c => !c.dead && c.type === 'monster' && high_priority_monsters.includes(c.mtype));
-        if(!desired_monsters.length && !smart.moving){
-            smart_move({x: monsters[0].x, y: monsters[0].y, map: monsters[0].map});
+        if(!desired_monsters.length){
+            if(!smart.moving){
+                smart_move({x: monsters[0].x, y: monsters[0].y, map: monsters[0].map});
+            }
+        } else {
+            if(!current_target){
+                change_target(desired_monsters[0]);
+            }
         }
         return true;
     }
@@ -444,16 +481,20 @@ function partyChristmasBuff(){
     }
 }
 
+var last_farmer_local_storage = null;
 function localStorageFarmer(){
-    var data = {
-        mluck: determineBuff("mluck", 1000 * 30),
-        rspeed: determineBuff("rspeed", 1000 * 30),
-        party: determineParty(),
-        gold: character.gold,
-        esize: character.esize,
-        location: {x: character.real_x, y: character.real_y, map: character.map},
+    if(last_farmer_local_storage == null || new Date() - last_farmer_local_storage >= 100){
+        var data = {
+            mluck: determineBuff("mluck", 1000 * 30),
+            rspeed: determineBuff("rspeed", 1000 * 30),
+            party: determineParty(),
+            gold: character.gold,
+            esize: character.esize,
+            location: {x: character.real_x, y: character.real_y, map: character.map},
+        }
+        localStorage.setItem(character.name + "_Data", JSON.stringify(data));
+        last_farmer_local_storage = new Date();
     }
-    localStorage.setItem(character.name + "_Data", JSON.stringify(data));
 }
 
 function determineBuff(name, time){
@@ -648,12 +689,10 @@ inventory_item_quantity(name, level=null)
 These fetch the AMOUNT of a specific item and level in an inventory index.
 */
 function itemQuantity(name, level=null){
-
     let item_count = character.items.filter(item => item != null && item.name == name && (level !== null ? item.level == level : true)).reduce(function(a,b){
         return a + (b["q"] || 1);
     }, 0);
     return item_count;
-
 } // end inventory_item_quantity
  
 /*
@@ -661,7 +700,6 @@ inventory_items(name)
 These fetch the LOCATION of a specific item and level in an inventory index.
 */
 function itemLocation(name, level=null){
-
     for(let i in character.items){
         let item = character.items[i];
         if(item && item.name == name && (level !== null ? item.level == level : true)){
@@ -669,7 +707,6 @@ function itemLocation(name, level=null){
         }
     }
     return null;
-
 } // end inventory_items
 
 var lastAttack = null;
