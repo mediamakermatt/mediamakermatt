@@ -87,7 +87,7 @@ function handleItems(){
 function sellItems(slot, data){
     let item_name = data.name;
     if(Object.keys(sell_whitelist).includes(data.name)){
-        if(data.level <= sell_whitelist[data.name]){
+        if(data.level < sell_whitelist[data.name]){
             sell(slot);
         }
     }
@@ -149,6 +149,7 @@ setInterval(function(){
             last_rip = new Date();
         }
     } else {
+        handle_party();
         if(character.ctype == "merchant") var ctype = character.ctype;
         else var ctype = "farmer";
         switch(ctype){
@@ -162,6 +163,12 @@ setInterval(function(){
     }
 }, 1);
 
+handle_party();
+
+function handle_party(){
+
+}
+
 // IF CHARACTER IS A MERCHANT
 function merchantMaster(){
     localStorageMerchant();
@@ -170,11 +177,11 @@ function merchantMaster(){
     var task = merchantLogic();
     if(task != null){
         switch(task){
-            case "visitPartyMembers":
-                visitPartyMembers();
-                break;
             case "depositBank":
                 depositBank();
+                break;
+            case "visitPartyMembers":
+                visitPartyMembers();
                 break;
             case "tradeItems":
                 tradeItems();
@@ -224,9 +231,13 @@ function farmerMaster(){
     }
 }
 
+var last_acquire_monster_hunt = null;
 function acquireMonsterHunt(){
-    set_message("Acquire Hunt");
-    move_to_npc("monsterhunter");
+    if(last_acquire_monster_hunt == null || new Date() - last_acquire_monster_hunt >= 100){
+        set_message("Acquire Hunt");
+        move_to_npc("monsterhunter");
+        last_acquire_monster_hunt = new Date();
+    }
 }
 
 function move_to_npc(name){
@@ -353,94 +364,115 @@ function localStorageMerchant(){
     }
 }
 
+var last_farm_phoenix = null;
 function farmPhoenix(){
-    var logic = [];
-    let entities = Object.values(parent.entities);
-    let phoenix = entities.filter(c => !c.dead && c.type === 'monster' && c.skin === 'phoenix');
-    if(!phoenix.length){
-        return false;
-    } else {
-        set_message("Farm Phoenix");
-        var monster = phoenix[0];
-        var distance = distanceToPoint(monster.real_x, monster.real_y, character.real_x, character.real_y);
-        if(distance > character.range * .9){
-            if(can_move_to(monster.real_x, monster.real_y)){
-                if(!character.moving){
-                    move(monster.real_x, monster.real_y);
+    if(last_farm_phoenix == null || new Date() - last_farm_phoenix >= 100){
+        var logic = [];
+        let entities = Object.values(parent.entities);
+        let phoenix = entities.filter(c => !c.dead && c.type === 'monster' && c.skin === 'phoenix');
+        if(!phoenix.length){
+            last_farm_phoenix = new Date();
+            return false;
+        } else {
+            set_message("Farm Phoenix");
+            var monster = phoenix[0];
+            var distance = distanceToPoint(monster.real_x, monster.real_y, character.real_x, character.real_y);
+            if(distance > character.range * .9){
+                if(can_move_to(monster.real_x, monster.real_y)){
+                    if(!character.moving){
+                        move(monster.real_x, monster.real_y);
+                        last_farm_phoenix = new Date();
+                    }
+                } else {
+                    if(!smart.moving){
+                        smart_move({x: monster.real_x, y: monster.real_y, map: character.map});
+                        last_farm_phoenix = new Date();
+                    }
+                }
+            }
+            last_farm_phoenix = new Date();
+            return true;
+        }
+    }
+}
+
+var last_farm_normal_monsters = null;
+function farmNormalMonsters(){
+    if(last_farm_normal_monsters == null || new Date() - last_farm_normal_monsters >= 100){
+        set_message("Farm Normal");
+        var monsters = [];
+        let entities = Object.values(parent.entities);
+        let desired_monsters = entities.filter(c => !c.dead && c.type === 'monster' && normal_monsters.includes(c.mtype));
+        for(let i in desired_monsters){
+            let monster = desired_monsters[i];
+            if(monster){
+                monsters.push(monster);
+            }
+        }
+        if(monsters.length){
+            var target = get_nearest_monster({type: normal_monsters[0]});
+            var current_target = get_targeted_monster();
+            if(!current_target){
+                change_target(target);
+                last_farm_normal_monsters = new Date();
+            }
+        } else {
+            if(!smart.moving){
+                smart_move(normal_monsters[0]);
+                last_farm_normal_monsters = new Date();
+            }
+        }
+    }
+}
+
+var last_farm_high_priority_monsters = null;
+function farmHighPriorityMonsters(){
+    if(last_farm_high_priority_monsters == null || new Date() - last_farm_high_priority_monsters >= 100){
+        set_message("Farm High");
+        var monsters = [];
+        for(let i in high_priority_monsters){
+            let monster = parent.S[high_priority_monsters[i]];
+            var snowman_hp = parent.G.monsters.snowman.max_hp;
+            if(monster && monster.live && monster.hp < monster.max_hp * 0.9 && monster.max_hp > snowman_hp){
+                monsters.push(monster);
+            }
+        }
+        var current_target = get_targeted_monster();
+        var snowman_target = get_nearest_monster({type: "snowman"});
+        if(monsters.length && !snowman_target){
+            let entities = Object.values(parent.entities);
+            let desired_monsters = entities.filter(c => !c.dead && c.type === 'monster' && high_priority_monsters.includes(c.mtype));
+            if(!desired_monsters.length){
+                if(!smart.moving){
+                    smart_move({x: monsters[0].x, y: monsters[0].y, map: monsters[0].map});
+                    last_farm_high_priority_monsters = new Date();
                 }
             } else {
-                if(!smart.moving){
-                    smart_move({x: monster.real_x, y: monster.real_y, map: character.map});
+                if(!current_target){
+                    change_target(desired_monsters[0]);
+                    last_farm_high_priority_monsters = new Date();
                 }
             }
+            return true;
         }
-        return true;
-    }
-}
-
-function farmNormalMonsters(){
-    set_message("Farm Normal");
-    var monsters = [];
-    let entities = Object.values(parent.entities);
-    let desired_monsters = entities.filter(c => !c.dead && c.type === 'monster' && normal_monsters.includes(c.mtype));
-    for(let i in desired_monsters){
-        let monster = desired_monsters[i];
-        if(monster){
-            monsters.push(monster);
-        }
-    }
-    if(monsters.length){
-        var target = get_nearest_monster({type: normal_monsters[0]});
-        var current_target = get_targeted_monster();
-        if(!current_target){
-            change_target(target);
-        }
-    } else {
-        if(!smart.moving){
-            smart_move(normal_monsters[0]);
-        }
-    }
-}
-
-function farmHighPriorityMonsters(){
-    set_message("Farm High");
-    var monsters = [];
-    for(let i in high_priority_monsters){
-        let monster = parent.S[high_priority_monsters[i]];
-        var snowman_hp = parent.G.monsters.snowman.max_hp;
-        if(monster && monster.live && monster.hp < monster.max_hp * 0.9 && monster.max_hp > snowman_hp){
-            monsters.push(monster);
-        }
-    }
-    var current_target = get_targeted_monster();
-    var snowman_target = get_nearest_monster({type: "snowman"});
-    if(monsters.length && !snowman_target){
-        let entities = Object.values(parent.entities);
-        let desired_monsters = entities.filter(c => !c.dead && c.type === 'monster' && high_priority_monsters.includes(c.mtype));
-        if(!desired_monsters.length){
-            if(!smart.moving){
-                smart_move({x: monsters[0].x, y: monsters[0].y, map: monsters[0].map});
+        if(parent.S.snowman != undefined && parent.S.snowman.live){
+            if(!snowman_target){
+                if(!smart.moving){
+                    smart_move({x: parent.S.snowman.x, y: parent.S.snowman.y, map: parent.S.snowman.map});
+                    last_farm_high_priority_monsters = new Date();
+                }
+            } else {
+                if(!current_target){
+                    change_target(snowman_target);
+                    last_farm_high_priority_monsters = new Date();
+                }
             }
+            last_farm_high_priority_monsters = new Date();
+            return true;
         } else {
-            if(!current_target){
-                change_target(desired_monsters[0]);
-            }
+            last_farm_high_priority_monsters = new Date();
+            return false;
         }
-        return true;
-    }
-    if(parent.S.snowman != undefined && parent.S.snowman.live){
-        if(!snowman_target){
-            if(!smart.moving){
-                smart_move({x: parent.S.snowman.x, y: parent.S.snowman.y, map: parent.S.snowman.map});
-            }
-        } else {
-            if(!current_target){
-                change_target(snowman_target);
-            }
-        }
-        return true;
-    } else {
-        return false;
     }
 }
 
@@ -471,13 +503,18 @@ function getHighPriorityMonsters(){
     return monsters;
 }
 
+var last_party_christmas_buff = null;
 function partyChristmasBuff(){
-    set_message("Xmas Buff");
-    if(!smart.moving){
-        smart_move(parent.G.maps.main.ref.newyear_tree,function(){
-            // This executes when we reach our destination
-            parent.socket.emit("interaction",{type:"newyear_tree"});
-        });
+    if(last_party_christmas_buff == null || new Date() - last_party_christmas_buff >= 100){
+        set_message("Xmas Buff");
+        if(!smart.moving){
+            smart_move(parent.G.maps.main.ref.newyear_tree,function(){
+                // This executes when we reach our destination
+                parent.socket.emit("interaction",{type:"newyear_tree"});
+                last_party_christmas_buff = new Date();
+            });
+            last_party_christmas_buff = new Date();
+        }
     }
 }
 
@@ -554,21 +591,26 @@ function watchFarmers(){
     return false;
 }
 
+var last_visit_party_members = null;
 function visitPartyMembers(){
-    set_message("Visit Farmers");
-    var location = JSON.parse(localStorage.getItem(party_names[1] + "_Data")).location;
-    if(character.map != location.map){
-        if(!smart.moving){
-            smart_move(location);
-        }
-    } else {
-        var distance = distanceToPoint(location.x, location.y, character.real_x, character.real_y);
-        if(distance >= 100){
+    if(last_visit_party_members == null || new Date() - last_visit_party_members >= 250){
+        set_message("Visit Farmers");
+        var location = JSON.parse(localStorage.getItem(party_names[1] + "_Data")).location;
+        if(character.map != location.map){
             if(!smart.moving){
                 smart_move(location);
-            } 
+                last_visit_party_members = new Date();
+            }
         } else {
-            buffFarmers();
+            var distance = distanceToPoint(location.x, location.y, character.real_x, character.real_y);
+            if(distance >= 100){
+                if(!smart.moving){
+                    smart_move(location);
+                    last_visit_party_members = new Date();
+                } 
+            } else {
+                buffFarmers();
+            }
         }
     }
 }
@@ -609,21 +651,27 @@ function sendToMerchant(dist, time){
     }
 }
 
+var last_send_merchant_items = null;
 function sentMerchantItems(){
-    for(let i in character.items){
-        let item = character.items[i];
-        if(item){
-            if(item.l == undefined){
-                if(item.p != undefined && item.p == "shiny"){
-                    sendItemToMerchant(300, i, 9999, 250);
-                }
-                if(item.q != undefined && !potion_types.includes(item.name)){
-                    sendItemToMerchant(300, i, 9999, 250);
-                }
-                if(item.level != undefined){
-                    if(upgrade_whitelist[item.name] != undefined && Object.keys(upgrade_whitelist).includes(item.name)){
-                        if(item.level >= upgrade_whitelist[item.name]){
-                            sendItemToMerchant(300, i, 9999, 250);
+    if(last_send_merchant_items == null || new Date() - last_send_merchant_items >= 100){
+        for(let i in character.items){
+            let item = character.items[i];
+            if(item){
+                if(item.l == undefined){
+                    if(item.p != undefined && item.p == "shiny"){
+                        sendItemToMerchant(300, i, 9999, 250);
+                        last_send_merchant_items = new Date();
+                    }
+                    if(item.q != undefined && !potion_types.includes(item.name)){
+                        sendItemToMerchant(300, i, 9999, 250);
+                        last_send_merchant_items = new Date();
+                    }
+                    if(item.level != undefined){
+                        if(upgrade_whitelist[item.name] != undefined && Object.keys(upgrade_whitelist).includes(item.name)){
+                            if(item.level >= upgrade_whitelist[item.name]){
+                                sendItemToMerchant(300, i, 9999, 250);
+                                last_send_merchant_items = new Date();
+                            }
                         }
                     }
                 }
@@ -646,26 +694,34 @@ function sendItemToMerchant(dist, slot, amt, time){
     }
 }
 
+var last_bank_deposit = null;
 function depositBank(){
-    set_message("Bank Deposit");
-    if(character.map != "bank"){
-        if(!smart.moving){
-            smart_move("bank", function(){
-                parent.socket.emit("bank",{operation:"deposit",amount: character.gold - gold_limit});
-            });
+    if(last_bank_deposit == null || new Date() - last_bank_deposit >= 250){
+        set_message("Bank Deposit");
+        if(character.map != "bank"){
+            if(!smart.moving){
+                smart_move("bank", function(){
+                    parent.socket.emit("bank",{operation:"deposit",amount: character.gold - gold_limit});
+                    last_bank_deposit = new Date();
+                });
+            }
         }
     }
 }
 
+var last_trade_items = null;
 function tradeItems(){
-    if(merchant_trade_in_town){
-        set_message("Town Trade");
-        if(character.map == town_trade_location.map){
-            var distance = distanceToPoint(town_trade_location.x, town_trade_location.y, character.real_x, character.real_y);
-        }
-        if((distance && distance > 25) || character.map != town_trade_location.map){
-            if(!smart.moving){
-                smart_move(town_trade_location);
+    if(last_trade_items == null || new Date() - last_trade_items >= 250){
+        if(merchant_trade_in_town){
+            set_message("Town Trade");
+            if(character.map == town_trade_location.map){
+                var distance = distanceToPoint(town_trade_location.x, town_trade_location.y, character.real_x, character.real_y);
+            }
+            if((distance && distance > 25) || character.map != town_trade_location.map){
+                if(!smart.moving){
+                    smart_move(town_trade_location);
+                    last_trade_items = new Date();
+                }
             }
         }
     }
@@ -709,25 +765,30 @@ function itemLocation(name, level=null){
     return null;
 } // end inventory_items
 
-var lastAttack = null;
+var last_attack = null;
+var last_move = null;
 function simpleAttack(){
     var target = get_targeted_monster();
     if(target){
         var distance = distanceToPoint(target.real_x, target.real_y, character.real_x, character.real_y);
         if(distance > character.range){
-            if(can_move_to(target.real_x, target.real_y)){
-                if(!character.moving){
-                    move(target.real_x, target.real_y);
-                }
-            } else {
-                if(!smart.moving){
-                    smart_move({x: target.real_x, y: target.real_y});
+            if(last_move == null || new Date() - last_move >= 100){
+                if(can_move_to(target.real_x, target.real_y)){
+                    if(!character.moving){
+                        move(target.real_x, target.real_y);
+                        last_move = new Date();
+                    }
+                } else {
+                    if(!smart.moving){
+                        smart_move({x: target.real_x, y: target.real_y});
+                        last_move = new Date();
+                    }
                 }
             }
         } else {
-            if(lastAttack == null || new Date() - lastAttack >= 1000 / character.frequency){
+            if(last_attack == null || new Date() - last_attack >= 1000 / character.frequency){
                 parent.monster_attack.call(target);
-                lastAttack = new Date();
+                last_attack = new Date();
             }
         }
     }
