@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #111111;
+  color: #f5f5f5;
+  font-size: 16px;
+  font-family: "Raleway", sans-serif;
+}
+
+#main_body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: space-between;
+}
+
+#main_body > main {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/*# sourceMappingURL=main.css.map */
