@@ -22,17 +22,24 @@
 /** The name of the database for WordPress */
 define( 'DB_NAME', 'mediamk0_mediamakermatt' );
 
-/** MySQL database username */
-// define( 'DB_USER', 'root' );
-define( 'DB_USER', 'mediamk0_mediamakermatt' );
-
-/** MySQL database password */
-// define( 'DB_PASSWORD', '' );
-define( 'DB_PASSWORD', 'Or!ch1maru20XX' );
-
-/** MySQL hostname */
-// define( 'DB_HOST', 'localhost' );
-define( 'DB_HOST', 'localhost:3306' );
+$actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]"; 
+if (strpos($actual_link, 'mediamakermatt') !== false) {
+	// PRODUCTION
+	/** MySQL database username */
+	define( 'DB_USER', 'mediamk0_mediamakermatt' );
+	/** MySQL database password */
+	define( 'DB_PASSWORD', 'Or!ch1maru20XX' );
+	/** MySQL hostname */
+	define( 'DB_HOST', 'localhost:3306' );
+} else {
+	// LOCAL
+	/** MySQL database username */
+	define( 'DB_USER', 'root' );
+	/** MySQL database password */
+	define( 'DB_PASSWORD', '' );
+	/** MySQL hostname */
+	define( 'DB_HOST', 'localhost' );
+}
 
 /** Database Charset to use in creating database tables. */
 define( 'DB_CHARSET', 'utf8mb4' );
