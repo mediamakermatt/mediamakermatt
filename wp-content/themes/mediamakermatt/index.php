@@ -2,11 +2,29 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;400;600;900&display=swap" rel="stylesheet">
 
-<div class="container">
+<div id="main_body">
+
+    <header>
+        <?php echo "Header"; ?>
+    </header>
+
+    <main>
+        <?php echo "Main"; ?>
+    </main>
+
+    <footer>
+        <?php echo "Footer"; ?>
+    </footer>
+    
+</div>
+
+<?php get_footer(); ?>
+
+<!-- <div class="container">
 
     <div class="row">
         <div class="col">
-            <?php echo "Full Width Column"; ?>
+            <?php echo "Full Width Column x"; ?>
         </div>
     </div>
 
@@ -46,6 +64,4 @@
         </div>
     </div>    
 
-</div>
-
-<?php get_footer(); ?>
+</div> -->

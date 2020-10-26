@@ -5,9 +5,9 @@ var main_loop = character.ping;
 var potion_types = ['hpot1', 'mpot1'];
 var load_code_name = "master_wip";
 var party_names = ['Lootbot', 'Sinstrite', 'Shield', 'Curse'];
-var normal_monsters = ["crab", "bee"];
+var party_leaders = [party_names[0], "NexusNull", "Maela"];
+var normal_monsters = ["crabx", "bee"];
 var high_priority_monsters = ['mrgreen', 'mrpumpkin', 'snowman'];
-var gold_limit = 1000000;
 var farm_location = {x: -1091, y: -62, map: "main"};
 var town_trade_location = {x: 22, y: -142, map: "main"};
 var sell_whitelist = {
@@ -29,6 +29,9 @@ var upgrade_whitelist = {
     ornamentstaff: 7, candycanesword: 7,
     t2bow: 7, pmace: 7, basher: 7, harmor: 5, hgloves: 5,
 };
+if(character.ctype != 'merchant'){
+         var gold_limit = 1000000;
+} else { var gold_limit = 100000000; }
 
 localStorage.setItem('potionTypes', JSON.stringify(potion_types));
 
@@ -45,7 +48,25 @@ if(load_characters && character.ctype == "merchant"){
 
 setInterval(function(){
     handleItems();
+    if(character.ctype == 'merchant'){
+        withdraw_gold();
+    }
 }, 1000);
+
+var last_withdraw_gold = null;
+function withdraw_gold(){
+    if(last_withdraw_gold == null || new Date() - last_withdraw_gold >= 1000){
+        if(character.gold <= gold_limit * .25){
+            var gold_amt = gold_limit * .75;
+            if(!smart.moving && character.map != 'bank'){
+                smart_move("bank", function(){
+                    parent.socket.emit("bank",{operation:"withdraw",amount:gold_amt});
+                    last_withdraw_gold = new Date();
+                });
+            }
+        }
+    }
+} // end withdraw_gold
 
 function getItemsBankNumber(item, bank_num){
     var items = [];
@@ -74,25 +95,25 @@ function getItemsBankNumber(item, bank_num){
 function handleItems(){
     for(let i in character.items){
         let item = character.items[i];
-        if(item && !item.p){
-            sellItems(i, item);
+        if(item){
+            if(item.name == 'fireblade' || item.name == 'firestaff'){
+                dismantle(i);
+            }
+            if(Object.keys(sell_whitelist).includes(item.name)){
+                if(item.level == undefined || (item.level != undefined && item.level <= sell_whitelist[item.name])){
+                    if(item.p != undefined){
+                        if(item.p != "shiny"){
+                            sell(i);
+                        }
+                    } else {
+                        sell(i);
+                    }
+                }
+            }
         }
-		if(item && (item.name == 'fireblade' || item.name == 'firestaff')){
-			dismantle(i);
-		}
     }
     upgradeItems();
 }
-
-function sellItems(slot, data){
-    let item_name = data.name;
-    if(Object.keys(sell_whitelist).includes(data.name)){
-        if(data.level < sell_whitelist[data.name]){
-            sell(slot);
-        }
-    }
-}
-
 
 function getGrade(item) {
     return parent.G.items[item.name].grades;
@@ -123,7 +144,7 @@ function upgradeItems(){
                 else
                 scroll_name = 'scroll2';
                 let [scroll_slot, scroll] = findItem(i => i.name == scroll_name);
-                if (!scroll) {
+                if (!scroll && character.gold >= parent.G.items[scroll_name].g && !character.q.upgrade) {
                     parent.buy(scroll_name);
                     return;
                 }
@@ -142,6 +163,7 @@ function upgradeItems(){
 }
 
 var last_rip = null;
+var last_party = null;
 setInterval(function(){
     if(character.rip){
         if(last_rip == null || new Date() - last_rip >= 5000){
@@ -149,7 +171,10 @@ setInterval(function(){
             last_rip = new Date();
         }
     } else {
-        handle_party();
+        if(last_party == null || new Date() - last_party >= 10000){
+            handle_party();
+            last_party = new Date();
+        }
         if(character.ctype == "merchant") var ctype = character.ctype;
         else var ctype = "farmer";
         switch(ctype){
@@ -163,10 +188,71 @@ setInterval(function(){
     }
 }, 1);
 
-handle_party();
-
 function handle_party(){
+    if(party_leaders.includes(character.name)){
+        // leave party if not ran by a leader
+        if(character.party != null && !party_leaders.includes(character.party)){
+            parent.socket.emit("party",{event:"leave"});
+            game_log("Left the party.");
+        }
+        var missing_members = get_missing_party_member();
+        if(character.party == null || (missing_members.length > 0)){
+            var cm_data = {
+                task: "join_party",
+                leader: character.name,
+                server: parent.server_region + "/" + parent.server_identifier
+            };
+            for(let i in missing_members){
+                let player = missing_members[i];
+                if(player){
+                    if(player !== character.name){
+                        send_cm(player,cm_data);
+                        send_party_invite(player);
+                        game_log("Inviting " + player + " to party...");
+                    }
+                }
+            }
+        }
+    }
+}
 
+function on_cm(name, data){
+    // join party if requester is on leader list
+	if(data.task == "join_party"){
+        let my_server = parent.server_region + "/" + parent.server_identifier
+        let leader_server = data.server;
+        if(character.party != null){
+            if(!Object.keys(parent.party).includes(data.leader)){
+                parent.socket.emit("party",{event:"leave"});
+                game_log("Left the party.");
+            }
+        }
+        if(my_server != leader_server){
+            game_log("Server hopping...");
+            parent.window.location.href = "http://adventure.land/character/"+character.name+"/in/"+leader_server;
+            location.reload();
+        }
+    }
+}
+
+// accepts a party invite from sender
+function on_party_invite(name){ 
+	if(party_leaders.indexOf(name) != -1){ 
+        accept_party_invite(name); 
+        game_log("Accepted " + name + "'s party invite.");
+	} 
+}
+
+function get_missing_party_member(){
+    let missing = [];
+    let missing_party_member = null;
+    let my_characters_amt = party_names.length;
+    while(my_characters_amt){
+        missing_party_member = (~Object.keys(parent.party).indexOf(party_names[--my_characters_amt])) ? missing_party_member : party_names[my_characters_amt];
+        missing.push(missing_party_member);
+    }
+    let uniqueChars = [...new Set(missing)];
+    return uniqueChars;
 }
 
 // IF CHARACTER IS A MERCHANT
@@ -203,6 +289,12 @@ function farmerMaster(){
     var task = farmerLogic();
     if(task != null){
         switch(task){
+            case "farmHighPriorityMonsters":
+                farmHighPriorityMonsters();
+                break;
+            case "farmPhoenix":
+                farmPhoenix();
+                break;
             case "partyChristmasBuff":
                 partyChristmasBuff();
                 break;
@@ -214,12 +306,6 @@ function farmerMaster(){
                 break;
             case "partyMonsterHunt":
                 partyMonsterHunt();
-                break;
-            case "farmHighPriorityMonsters":
-                farmHighPriorityMonsters();
-                break;
-            case "farmPhoenix":
-                farmPhoenix();
                 break;
             case "farmNormalMonsters":
                 farmNormalMonsters();
@@ -603,7 +689,7 @@ function visitPartyMembers(){
             }
         } else {
             var distance = distanceToPoint(location.x, location.y, character.real_x, character.real_y);
-            if(distance >= 100){
+            if(distance >= character.range){
                 if(!smart.moving){
                     smart_move(location);
                     last_visit_party_members = new Date();
@@ -658,21 +744,9 @@ function sentMerchantItems(){
             let item = character.items[i];
             if(item){
                 if(item.l == undefined){
-                    if(item.p != undefined && item.p == "shiny"){
+                    if(!potion_types.includes(item.name)){
                         sendItemToMerchant(300, i, 9999, 250);
                         last_send_merchant_items = new Date();
-                    }
-                    if(item.q != undefined && !potion_types.includes(item.name)){
-                        sendItemToMerchant(300, i, 9999, 250);
-                        last_send_merchant_items = new Date();
-                    }
-                    if(item.level != undefined){
-                        if(upgrade_whitelist[item.name] != undefined && Object.keys(upgrade_whitelist).includes(item.name)){
-                            if(item.level >= upgrade_whitelist[item.name]){
-                                sendItemToMerchant(300, i, 9999, 250);
-                                last_send_merchant_items = new Date();
-                            }
-                        }
                     }
                 }
             }
