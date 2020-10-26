@@ -4,10 +4,47 @@
 body {
     margin: 0;
     padding: 0;
-    background: #111111;
-    color: #f5f5f5;
     font-size: 16px;
     font-family: 'Raleway', sans-serif;
+}
+
+/*mode preview*/
+.dark-preview {
+    body, header, main, footer {
+        background: #111111;
+        color: #FFFFFF;
+    }
+    header {
+        .header-logo-dark {
+            display: block;
+        }
+        .header-logo-light {
+            display: none;
+        }
+    }
+    main {
+        border-top: 1px solid #FFFFFF;
+        border-bottom: 1px solid #FFFFFF;
+    }
+}
+
+.white-preview {
+    body, header, main, footer {
+        background: #FFFFFF;
+        color: #111111;
+    }
+    header {
+        .header-logo-dark {
+            display: none;
+        }
+        .header-logo-light {
+            display: block;
+        }
+    }
+    main {
+        border-top: 1px solid #111111;
+        border-bottom: 1px solid #111111;
+    }
 }
 
 #main_body {
@@ -15,19 +52,45 @@ body {
     flex-direction: column;
     min-height: 100vh;
     justify-content: space-between;
-}
+    header {
+        .header-logo {
+            height: 50px;
+        }
+        .day-night-switch {
+            margin-left: 1rem;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        ul {
+            list-style-type: none;
+            a {
+                padding: 0;
+                margin: 0;
+                background: transparent;
+                text-decoration: none;
+                color: #111111;
+                li {
+                    padding: 2rem 1rem;
+                    display: inline;
+                }
+                &:hover {
+                    cursor: pointer;
+                    color: green;
+                    li {
+                        background: #FFFFFF;
+                    }
+                }
+            }
+        }
+    }
+    main {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+    footer {
 
-#main_body > header {
-
-}
-
-#main_body > main {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-
-#main_body > footer {
-
-    
+    }
 }

@@ -1,10 +1,39 @@
 body {
   margin: 0;
   padding: 0;
-  background: #111111;
-  color: #f5f5f5;
   font-size: 16px;
   font-family: "Raleway", sans-serif;
+}
+
+/*mode preview*/
+.dark-preview body, .dark-preview header, .dark-preview main, .dark-preview footer {
+  background: #111111;
+  color: #FFFFFF;
+}
+.dark-preview header .header-logo-dark {
+  display: block;
+}
+.dark-preview header .header-logo-light {
+  display: none;
+}
+.dark-preview main {
+  border-top: 1px solid #FFFFFF;
+  border-bottom: 1px solid #FFFFFF;
+}
+
+.white-preview body, .white-preview header, .white-preview main, .white-preview footer {
+  background: #FFFFFF;
+  color: #111111;
+}
+.white-preview header .header-logo-dark {
+  display: none;
+}
+.white-preview header .header-logo-light {
+  display: block;
+}
+.white-preview main {
+  border-top: 1px solid #111111;
+  border-bottom: 1px solid #111111;
 }
 
 #main_body {
@@ -13,8 +42,38 @@ body {
   min-height: 100vh;
   justify-content: space-between;
 }
-
-#main_body > main {
+#main_body header .header-logo {
+  height: 50px;
+}
+#main_body header .day-night-switch {
+  margin-left: 1rem;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+#main_body header ul {
+  list-style-type: none;
+}
+#main_body header ul a {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  text-decoration: none;
+  color: #111111;
+}
+#main_body header ul a li {
+  padding: 2rem 1rem;
+  display: inline;
+}
+#main_body header ul a:hover {
+  cursor: pointer;
+  color: green;
+}
+#main_body header ul a:hover li {
+  background: #FFFFFF;
+}
+#main_body main {
   display: flex;
   flex-direction: column;
   flex-grow: 1;

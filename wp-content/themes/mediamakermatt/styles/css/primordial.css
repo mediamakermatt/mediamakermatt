@@ -15,4 +15,24 @@
   padding: 1rem;
 }
 
+.flex-left {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.flex-right {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.show {
+  display: block;
+}
+
+.hide {
+  display: none;
+}
+
 /*# sourceMappingURL=primordial.css.map */
