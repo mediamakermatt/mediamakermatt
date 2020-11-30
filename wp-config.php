@@ -23,7 +23,7 @@
 define( 'DB_NAME', 'mediamk0_mediamakermatt' );
 
 $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]"; 
-if (strpos($actual_link, 'https://www.mediamakermatt') !== false) {
+if (strpos($actual_link, 'mediamakermatt') !== false) {
 	// PRODUCTION
 	/** MySQL database username */
 	define( 'DB_USER', 'mediamk0_mediamakermatt' );

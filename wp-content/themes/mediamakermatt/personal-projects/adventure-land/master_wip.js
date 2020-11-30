@@ -26,7 +26,7 @@ var upgrade_whitelist = {
     gloves1: 7, coat1: 7, helmet1: 7, pants1: 7, shoes1: 7,
     harbringer: 5, oozingterror: 5, bataxe: 7, spear: 7,
     xmaspants: 7, xmassweater: 7, xmashat: 7, xmasshoes: 7, mittens: 7, warmscarf: 7,
-    ornamentstaff: 7, candycanesword: 7,
+    ornamentstaff: 7, candycanesword: 7, cupid: 7,
     t2bow: 7, pmace: 7, basher: 7, harmor: 5, hgloves: 5,
 };
 if(character.ctype != 'merchant'){
@@ -52,6 +52,14 @@ setInterval(function(){
         withdraw_gold();
     }
 }, 1000);
+
+if(character.name == party_names[0]){
+    setInterval(function(){
+        var current = parent.server_region + '/' + parent.server_identifier;
+        var url = 'character/' + party_names[0] + '/in/' + current + '/';
+        parent.window.location.href = url;
+    }, 1000 * 60 * 60);
+}
 
 var last_withdraw_gold = null;
 function withdraw_gold(){
